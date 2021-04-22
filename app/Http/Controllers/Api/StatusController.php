@@ -3,9 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\DesposisimasukResource;
+use App\Http\Resources\StatusResources;
+use App\Http\Resources\SubbidangResource;
+use App\Http\Resources\SuratmasukResource;
 use App\Models\Status;
 use App\Models\Suratmasuk;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StatusController extends Controller
 {
@@ -14,9 +19,50 @@ class StatusController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index($status)
     {
-        //
+
+//        $status = "Menunggu Desposisi";
+        $sts = Status::with('Suratmasuk','User')->fromQuery('Select * FROM status WHERE id IN (SELECT MAX(id) FROM status GROUP BY suratmasuk_id) having status = "'.$status.'"');
+//        $sts = Status::with('Suratmasuk','User','Desposisimasuk')->get();
+
+//        return $sts;
+//        $surat = $status->Suratmasuk()->get();
+//        return response()->json($sts,200);                      <a href="#" class="btn btn-sm bg-warning"> <i class="fas fa-paperclip"></i>Lampiran
+
+        $hasil=StatusResources::collection($sts);
+
+        return response([
+            'data' => $hasil
+        ],200);
+    }
+
+    public function desposisi($status)
+    {
+        $sts = Status::with('Suratmasuk','User','Desposisimasuk')->fromQuery('Select * FROM status WHERE id IN (SELECT MAX(id) FROM status GROUP BY suratmasuk_id) having status = "'.$status.'"');
+        $hasil=DesposisimasukResource::collection($sts);
+
+        return response([
+            'data' => $hasil
+        ],200);
+    }
+
+    public function terdesposisi()
+    {
+        $sts = Status::with('Suratmasuk','User','Desposisimasuk')->fromQuery('Select * FROM status WHERE id IN (SELECT MAX(id) FROM status GROUP BY suratmasuk_id) having desposisimasuk_id');
+        $hasil=DesposisimasukResource::collection($sts);
+
+        return response([
+            'data' => $hasil
+        ],200);
+    }
+
+    public function tracking($id)
+    {
+
+        $track = Status::where('suratmasuk_id',$id)->with('Suratmasuk','User')->get();
+        return SuratmasukResource::collection($track);
+
     }
 
     /**

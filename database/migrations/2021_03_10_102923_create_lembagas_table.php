@@ -20,8 +20,8 @@ class CreateLembagasTable extends Migration
             $table->string('NamaLembaga');
             $table->string('Status');
             $table->string('KodeLembaga');
-            $table->bigInteger('KLASIS_ID');
-            $table->foreign('KLASIS_ID')->references('id')->on('tklasis');
+            $table->bigInteger('KLASIS_ID')->unsigned();
+            $table->foreign('KLASIS_ID')->references('ID')->on('tklasis');
             $table->timestamps();
         });
     }

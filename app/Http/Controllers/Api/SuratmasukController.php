@@ -3,10 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\StatusResources;
+use App\Mail\NotifikasiSekum;
+use App\Models\Bidang;
 use App\Models\Status;
+use App\Models\Subbidang;
 use App\Models\Suratmasuk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class SuratmasukController extends Controller
 {
@@ -26,32 +33,64 @@ class SuratmasukController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
+
+
+
     public function register(Request $request)
     {
+        $request->validate([
+            'tgl_dokumen' => 'required',
+            'subBidang_id' => 'required',
+            'nama_surat' => 'required',
+            'sumber_surat' => 'required',
+            'perihal' => 'required',
+            'isi_surat' => 'required',
+            'file' => 'required',
+            'formats' => 'required',
+            'prioritas' => 'required',
+        ]);
+
+
+        //Pembuataan nomor surat
+        $subbid = Subbidang::where('id',$request->subBidang_id)->first();
+        $bidang = Bidang::where('id',$subbid->bidang_id)->first();
+        $y1 = date('Y',strtotime(now()));
+        $count = DB::table('suratmasuks')->whereYear('tgl_dokumen',$y1)->count()+1;
+        $nomor_surat ="SM/".$y1."/".$bidang->kode_bidang."/".$subbid->kode_subBidang."/".$count;
+
+
+        //lampiran surat
+        $nama = "SM-".$y1."-".$bidang->kode_bidang."-".$subbid->kode_subBidang."-".$count;
+        $file_surat= $request->file('file')->storeAs('Suratmasuk/'.$y1,$nama);
+
+
+
         $newSurat = new Suratmasuk();
-        $newSurat->nomor_surat = $request->nomor_surat;
+        $newSurat->nomor_surat = $nomor_surat;
         $newSurat->tgl_dokumen = $request->tgl_dokumen;
-        $newSurat->bidang_id = $request->bidang_id;
         $newSurat->subBidang_id = $request->subBidang_id;
         $newSurat->nama_surat = $request->nama_surat;
         $newSurat->sumber_surat = $request->sumber_surat;
         $newSurat->perihal = $request->perihal;
-        $newSurat->tgl_masuk = $request->tgl_masuk;
+        $newSurat->tgl_masuk = now();
         $newSurat->isi_surat = $request->isi_surat;
-        $newSurat->file = $request->file;
-        $newSurat->format = $request->format;
+        $newSurat->file = 'Suratmasuk/'.$y1.'/'.$nama;
+        $newSurat->format = $request->formats;
         $newSurat->prioritas = $request->prioritas;
-        $newSurat->keterangan = $request->keterangan;
+       $newSurat->keterangan = $request->keterangan;
+
 
         $newSurat->save();
 
         $newStatus = new Status();
         $newStatus->suratmasuk_id = Suratmasuk::max('id');
         $newStatus->status = "Teregistrasi";
-        $newStatus->user_id = Auth::user()->id;
+        $newStatus->user_id = '1';
+        Suratmasuk::where('id',$newStatus->suratmasuk_id)->update(['status'=>'Teregistrasi']);
         $newStatus->save();
 
-        return "surat teregistrasi";
+        return "Surat berhasil teregistrasi";
+//        return redirect('http://localhost:8001/tsuratmasuk');
     }
 
     /**
@@ -62,7 +101,15 @@ class SuratmasukController extends Controller
      */
     public function show(Suratmasuk $suratmasuk)
     {
-        //
+        $sts = Status::with('suratmasuk','user')->where('suratmasuk_id',$suratmasuk->id)->orderBy('id','desc')->limit('1')->get('status');
+        return $sts;
+
+        $hasil=StatusResources::collection($sts);
+
+        return response([
+            'data' => $hasil
+        ],200);
+
     }
 
     /**
@@ -89,18 +136,46 @@ class SuratmasukController extends Controller
     }
 
 
-    public function waiting(Suratmasuk $suratmasuk)
+    public function waiting(Request $request)
     {
-        //mengubah value sent pada data suratmasuk
-        $surat=Suratmasuk::where('id',$suratmasuk->id);
-        $surat->sent = 1;
-        $surat->save();
 
-        //Mengubah status surat menjadi Menunggu Desposisi
-        $newStatus = new Status();
-        $newStatus->suratmasuk_id = $suratmasuk->id;
-        $newStatus->status = "Menunggu Desposisi";
-        $newStatus->user_id = Auth::user()->id;
+        //mengubah value sent pada data suratmasuk
+//        $surat = Suratmasuk::findOrFail($request->suratmasuk_id);
+//        $surat->sent = 1;
+//        $surat->save();
+
+       //Cek status surat
+        $sts = Status::where('suratmasuk_id',$request->suratmasuk_id)->orderBy('id','desc')->first();
+//        return $sts->status;
+        if ($sts->status != "Teregistrasi"){
+            return "Surat Belum Teregistrasi";
+        } else {
+            //Mengubah status surat menjadi Menunggu Desposisi
+            $newStatus = new Status();
+            $newStatus->suratmasuk_id = $request->suratmasuk_id;
+            $newStatus->status = "Menunggu Desposisi";
+            $newStatus->user_id = '1';
+            $newStatus->save();
+
+            $sm= Suratmasuk::findOrfail($newStatus->suratmasuk_id);
+            $email = new NotifikasiSekum($sm);
+            Mail::to('sekum@gkj.or.id')->send($email);
+
+            return "Surat Menunggu Desposisi";
+
+//            return redirect('http://localhost:8001/suratmasuk/teregistrasi');
+        }
+
+
+
+    }
+
+    public function lampiran(Suratmasuk $suratmasuk){
+        try {
+            return Storage::disk('local')->response($suratmasuk->file);
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
 
     }
 }

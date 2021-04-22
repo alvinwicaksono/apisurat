@@ -12,6 +12,11 @@ class Subbidang extends Model
 
     public function Bidang()
     {
-        return $this->belongsTo(Bidang::class);
+        return $this->belongsTo('App\Models\Bidang','bidang_id','id');
+    }
+
+    public function Suratmasuk()
+    {
+        return $this->hasMany(Suratmasuk::class);
     }
 }

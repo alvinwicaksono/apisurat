@@ -5,15 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Format extends Model
+class Tbidang extends Model
 {
     protected $connection = 'mysql2';
-    protected $table = 'tformat';
+    protected $table = 'tbidang';
     use HasFactory;
 
-    public function Dokumen()
+    public function Tsubbidang()
     {
-        return $this->hasMany('App\Models\Dokumen');
+        return $this->hasMany('App\Models\Tsubbidang');
     }
-
 }

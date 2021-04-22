@@ -17,8 +17,6 @@ class CreateSuratmasuksTable extends Migration
             $table->id();
             $table->string('nomor_surat');
             $table->date('tgl_dokumen');
-            $table->bigInteger('bidang_id')->unsigned();
-            $table->foreign('bidang_id')->references('id')->on('bidang');
             $table->bigInteger('subBidang_id')->unsigned();
             $table->foreign('subBidang_id')->references('id')->on('subbidang');
             $table->string('nama_surat');

@@ -9,4 +9,9 @@ class Penerima extends Model
 {
     protected $table ='penerima';
     use HasFactory;
+
+    public function Desposisimasuk()
+    {
+        return $this->hasMany(Desposisimasuk::class);
+    }
 }

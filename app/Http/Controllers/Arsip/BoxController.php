@@ -1,14 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Arsip;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Box;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use PhpParser\Node\Stmt\Return_;
 
-class UserController extends Controller
+class BoxController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -17,38 +15,30 @@ class UserController extends Controller
      */
     public function index()
     {
-       $user=User::all();
-       return response([
-           'data' => $user
-       ],200);
+        $box = Box::all();
+        return response([
+            'data'=>$box,
+        ],200);
     }
 
     /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return string
+     * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
     {
-        $addUser= new User();
-        $addUser->name = $request->name;
-        $addUser->email = $request->email;
-        $addUser->password = Hash::make('12345678');
-        $addUser->role = $request->role;
-        $addUser->save();
-
-        return "data berhasil ditambahkan";
-
+        //
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\User  $user
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show(User $user)
+    public function show($id)
     {
         //
     }
@@ -57,10 +47,10 @@ class UserController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\User  $user
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, User $user)
+    public function update(Request $request, $id)
     {
         //
     }
@@ -68,10 +58,10 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\User  $user
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy(User $user)
+    public function destroy($id)
     {
         //
     }
